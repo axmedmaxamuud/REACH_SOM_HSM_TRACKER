@@ -1,0 +1,133 @@
+---
+title: "REACH HSM Survey Tracker"
+runtime : shiny
+output: 
+  flexdashboard::flex_dashboard:
+    theme: journal
+    orientation: rows
+    vertical_layout: fill
+---
+
+```{r, set-up}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, error = FALSE, message = FALSE)
+```
+
+```{r, load-packages}
+# clear working directory
+rm(list = ls())
+
+library(flexdashboard)
+library(lubridate)
+library(shiny)
+library(leaflet)
+library(leaflet.extras)
+library(readxl)
+library(httr)
+library(plotly)
+library(DT)
+library(sf)
+library(tidyverse)
+```
+
+```{r, load-data}
+df <- read_excel("input/HSM-Data_2022-10-12.xlsx")
+h2r_districts <- read.csv("input/hard2reach_districts.csv", stringsAsFactors = F)
+itemset <- read.csv("input/tool/itemsets.csv", stringsAsFactors = F)
+
+# hard to reach settlements
+h2r_settlements <- itemset %>% 
+  mutate(include = ifelse(district %in% h2r_districts$district, "clear", "drop")) %>% 
+  filter(include == "clear")
+names(h2r_settlements)[names(h2r_settlements) == "name"] <- "info_settlement"
+
+```
+
+# Home
+
+##
+
+### Number of Interviews (Overall)
+
+```{r}
+valueBox(length(df$"uuid"),
+         icon = "fa-file-text")
+```
+
+### Hard to Reach Districts Covered
+
+```{r}
+names(h2r_districts)[names(h2r_districts) == "district"] <- "district_info"
+h2r_dis_report <- df %>% 
+  left_join(h2r_districts, by = "district_info") %>% 
+  filter(!is.na(State)) %>% 
+  group_by(info_reg, district_info) %>% 
+  summarise(total = n())
+
+
+valueBox(length(unique(h2r_dis_report$district_info)),
+         icon = "fa-globe")
+```
+
+### Hard to Reach Settlements Covered
+
+```{r}
+h2r_sett_progress <- df %>% 
+  left_join(h2r_settlements, by = "info_settlement") %>% 
+  filter(!is.na(district)) %>% 
+  group_by(info_reg, district_info, info_settlement) %>% 
+  summarise(total_surveys = n())
+
+valueBox(length(unique(h2r_sett_progress$info_settlement)),
+         icon = "fas fa-home")
+```
+
+
+## {.tabset}
+
+### Number of Surveys per H2R Settlement
+
+```{r}
+datatable(
+  h2r_sett_progress, extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('csv', 'excel')
+  )
+)
+```
+
+
+### Number of surveys per H2R District
+
+```{r}
+h2r_dis_report <- df %>% 
+  left_join(h2r_districts, by = "district_info") %>% 
+  filter(!is.na(State)) %>% 
+  group_by(info_reg, district_info) %>% 
+  summarise(total = n())
+
+DT::datatable(h2r_dis_report)
+```
+
+### Number of Surveys per Area
+
+```{r}
+reach_bases <- df %>% 
+  group_by(area_list) %>% 
+  summarise(total = n())
+
+DT::datatable(reach_bases)
+```
+
+
+# Hight Frequency Checks
+```{r}
+library(cleaninginspectoR)
+
+check_time <- cleaninginspectoR::check_time(df,duration_threshold_lower = 20,
+                                            duration_threshold_upper = 60)
+
+
+```
+
+
+
