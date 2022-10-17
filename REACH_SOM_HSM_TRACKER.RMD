@@ -105,7 +105,13 @@ h2r_dis_report <- df %>%
   group_by(info_reg, district_info) %>% 
   summarise(total = n())
 
-DT::datatable(h2r_dis_report)
+datatable(
+  h2r_dis_report, extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('csv', 'excel')
+  )
+)
+
 ```
 
 ### Number of Surveys per Area
@@ -115,16 +121,19 @@ reach_bases <- df %>%
   group_by(area_list) %>% 
   summarise(total = n())
 
-DT::datatable(reach_bases)
+datatable(
+  reach_bases, extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('csv', 'excel')
+  )
+)
+
 ```
 
 
-# Hight Frequency Checks
-```{r}
-library(cleaninginspectoR)
+# High Frequency
 
-check_time <- cleaninginspectoR::check_time(df,duration_threshold_lower = 20,
-                                            duration_threshold_upper = 60)
+```{r}
 
 
 ```
